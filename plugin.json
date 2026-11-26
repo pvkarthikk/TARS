@@ -1,7 +1,7 @@
 {
   "name": "tars",
   "displayName": "TARS",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "TARS (Triage, Act, Rework, Score) — Fast-execution coding agent plugin with objective rework-cost gating, parallel scratchpad tasks, and decaying local-first Markdown memory.",
   "logo": "assets/logo.svg",
   "agents": "com.github.copilot/agents/",
