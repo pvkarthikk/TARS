@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "tars",
+  "description": "TARS (Triage, Act, Rework, Score) — Fast-execution coding agent plugin with objective rework-cost gating, parallel scratchpad tasks, and decaying local-first Markdown memory.",
+  "owner": {
+    "name": "Karthik Venkatesh",
+    "url": "https://github.com/pvkarthikk"
+  },
+  "plugins": [
+    {
+      "name": "tars",
+      "description": "TARS (Triage, Act, Rework, Score) — Fast-execution coding agent plugin with objective rework-cost gating, parallel scratchpad tasks, and decaying local-first Markdown memory.",
+      "version": "0.1.0",
+      "source": "./"
+    }
+  ]
+}

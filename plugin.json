@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "tars",
+  "displayName": "TARS",
+  "version": "0.1.0",
+  "description": "TARS (Triage, Act, Rework, Score) — Fast-execution coding agent plugin with objective rework-cost gating, parallel scratchpad tasks, and decaying local-first Markdown memory.",
+  "logo": "assets/logo.svg",
+  "author": {
+    "name": "Karthik Venkatesh",
+    "url": "https://github.com/pvkarthikk"
+  },
+  "homepage": "https://github.com/pvkarthikk/TARS",
+  "repository": "https://github.com/pvkarthikk/TARS",
+  "license": "Apache-2.0",
+  "suggestedPrompts": [
+    "/tars-task Add input validation to the login form",
+    "/tars-resume",
+    "/tars-learn Prefer explicit error returns over throwing exceptions in service layers"
+  ]
+}

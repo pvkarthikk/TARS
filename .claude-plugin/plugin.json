@@ -1,0 +1,12 @@
+{
+  "name": "tars",
+  "version": "0.1.0",
+  "description": "TARS (Triage, Act, Rework, Score) — Fast-execution coding agent plugin with objective rework-cost gating, parallel scratchpad tasks, and decaying local-first Markdown memory.",
+  "author": {
+    "name": "Karthik Venkatesh",
+    "url": "https://github.com/pvkarthikk"
+  },
+  "homepage": "https://github.com/pvkarthikk/TARS",
+  "repository": "https://github.com/pvkarthikk/TARS",
+  "license": "Apache-2.0"
+}
