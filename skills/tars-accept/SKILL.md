@@ -1,85 +1,91 @@
 ---
 name: tars-accept
 description: >-
-  Accept and archive an active TARS scratchpad task, reward non-contradicted
-  applied learnings with decay-adjusted scores, write outcome.md, move the
-  folder to tasks/, and clear active_task_id. Use when the user invokes
-  /tars-accept or /accept, or during an implicit-accept sweep.
+  Explicitly close and archive a TARS scratchpad task as accepted, abandoned, or
+  blocked, optionally rewarding non-contradicted learnings and recording
+  validation, first_pass, and gate outcome metadata. Use when the user invokes
+  /tars-accept (including --abandoned or --blocked).
 ---
 
-# TARS Accept (`/tars-accept` / `/accept`)
+# TARS Accept (`/tars-accept`)
 
-Finalize an active (or swept paused) task, reward helpful learnings, write `outcome.md`, and archive the task folder from `scratchpad/` to `tasks/`.
-
----
-
-## Step 1: Resolve Target Task
-
-1. Resolve `$PROJECT_DIR` (`~/.tars/projects/<folder-name>_<6-char-hash>` or `%USERPROFILE%\.tars\...`).
-2. Determine the target task directory:
-   - **Explicit invocation (`/tars-accept` / `/accept`):** Read `active_task_id` from `$PROJECT_DIR/meta.yaml` (or find the single `status: active` folder in `scratchpad/`). If none is active, list any `paused` tasks and ask the user to `/tars-resume <slug>` first.
-   - **Implicit-Accept Sweep (from `tars-task`):** Use the specified paused task directory and set `implicit_accept: true`.
-3. Read `task.md` in `$PROJECT_DIR/scratchpad/<task-id>/`.
+Explicitly close a scratchpad task (`accepted`, `abandoned`, or `blocked`), write `outcome.md`, and archive the folder to `tasks/`. Tasks are **never** auto-accepted on commit.
 
 ---
 
-## Step 2: Reward Non-Contradicted Learnings
+## Step 1: Resolve Target Task & Closure Mode
 
-1. Compute the reward list: every ID in `applied_learnings` that is **not** in `contradicted_learnings`.
-2. For each rewarded learning ID (located in `~/.tars/global/learning/` for `L*` or `$PROJECT_DIR/learning/` for `P*`):
-   - Increment `applied_count` by `1`.
-   - Increment `accepted_count` by `1`.
-   - Set `last_used` to today (`YYYY-MM-DD`, so `delta_t = 0`).
-   - Recalculate `score = round(((accepted_count + 1) / (applied_count + 2)) * exp(-0.003 * 0), 2)`.
-   - Update `status` (`>= 0.45` `active`, `0.25 <= score < 0.45` `probation`, `< 0.25` `deprecated`).
-3. For any scope (`global` and/or `project`) whose learnings were rewarded, refresh time-decay (`delta_t = days since last_used`) across all non-superseded learnings in that scope and rebuild its `_index.md` (`ID | score | tags | one-line summary`, keeping only `active` and `probation` entries).
+1. Resolve `$PROJECT_DIR`:
+   ```bash
+   python3 <plugin-root>/scripts/tars.py project-id --repo . --json
+   ```
+2. Parse optional arguments:
+   - `[task-slug]` — target a specific task in `$PROJECT_DIR/scratchpad/` (defaults to `active_task_id` in `meta.yaml`, or the single `active`/`awaiting-go` task). If none matches, list `paused` tasks and ask the user to specify a slug or `/tars-resume`.
+   - `--abandoned [reason]` -> closure status `abandoned`
+   - `--blocked [reason]` -> closure status `blocked`
+   - Otherwise -> closure status `accepted`
+3. Read `$PROJECT_DIR/scratchpad/<task-id>/task.md`.
+
+---
+
+## Step 2: Update Learnings (Accepted Only)
+
+- **If `status == accepted`:**
+  1. `rewarded_learnings` = IDs in `applied_learnings` not in `contradicted_learnings`.
+  2. For each rewarded ID (in `~/.tars/global/learning/` for `L*` or `$PROJECT_DIR/learning/` for `P*`):
+     - Increment `applied_count` (+1) and `accepted_count` (+1), and set `last_used` to today (`YYYY-MM-DD`).
+  3. Rebuild each affected scope's index (refreshing decay across all rules in that scope):
+     ```bash
+     python3 <plugin-root>/scripts/tars.py rebuild-index --dir "<learning-dir>" --write --json
+     ```
+- **If `status` is `abandoned` or `blocked`:**
+  - **Do NOT reward any learnings** (`rewarded_learnings: []`).
+  - Ask for or record a brief `close_reason`. Never run `git reset`, `git checkout --`, `git restore`, `git clean`, or `git stash` to revert changes automatically.
 
 ---
 
 ## Step 3: Write `outcome.md`
 
-1. Gather end commit and diff summary:
-   ```bash
-   git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || echo "none"
-   git -C "$REPO_ROOT" diff --stat "<base_commit>..HEAD" 2>/dev/null
-   git -C "$REPO_ROOT" status --short
-   ```
-   *(Include working tree diff stats if changes are not yet committed.)*
-
-2. Create `$PROJECT_DIR/scratchpad/<task-id>/outcome.md`:
+Gather commit/diff metadata (`git rev-parse HEAD`, `git diff --stat <base_commit>..HEAD`, `git status --short`), compute `first_pass = (status == "accepted" and rework_count == 0)`, copy `gate`, `gate_triggers`, and `validation` from `task.md`, and write `$PROJECT_DIR/scratchpad/<task-id>/outcome.md`:
 
 ```markdown
 ---
-status: accepted
-accepted_at: 2026-11-26
+status: accepted        # accepted | abandoned | blocked
+closed_at: 2026-11-26
+gate: fast-track        # fast-track | gated
+gate_triggers: []
+first_pass: true
 rework_count: 0
+validation:
+  format: passed
+  lint: passed
+  build: skipped
+  tests: passed
 base_commit: <base-sha>
 end_commit: <head-sha>
 touched_files: []
 rewarded_learnings: []
 contradicted_learnings: []
-implicit_accept: false
+close_reason: null
 ---
 # Outcome: <Task Title>
 
-## Diff Summary
-- <Brief bullet summary of files changed and verified behavior>
+## Summary
+- <Diff summary, closure note, and validation results (never claim skipped checks passed)>
 ```
 
 ---
 
 ## Step 4: Archive & Clear Active Pointer
 
-1. Update `status: accepted` and `updated: <YYYY-MM-DD>` in `task.md`.
-2. Move the task directory from `$PROJECT_DIR/scratchpad/<task-id>/` to `$PROJECT_DIR/tasks/<task-id>/`.
-   - If `$PROJECT_DIR/tasks/<task-id>/` already exists, append `-2`, `-3`, etc. to the archived folder name.
-3. Read `$PROJECT_DIR/meta.yaml`:
-   - Set `active_task_id: null` **only if** `meta.yaml`'s `active_task_id` matches the archived `<task-id>`. (Do not clear another currently active task during an implicit-accept sweep of a paused task.)
+1. Set `status: <accepted|abandoned|blocked>` and `updated: <YYYY-MM-DD>` in `task.md`.
+2. Move `$PROJECT_DIR/scratchpad/<task-id>/` to `$PROJECT_DIR/tasks/<task-id>/` (append `-2`, `-3` on collision).
+3. Update `$PROJECT_DIR/meta.yaml`: set `active_task_id: null` **only if** `active_task_id` matched `<task-id>`.
 
 ---
 
 ## Verification
 
-- Confirm `$PROJECT_DIR/scratchpad/<task-id>/` no longer exists and `$PROJECT_DIR/tasks/<task-id>/outcome.md` is present.
-- Confirm `meta.yaml` `active_task_id` is `null` (for explicit accept) or unchanged (for sweep of a paused task).
+- Confirm `$PROJECT_DIR/tasks/<task-id>/outcome.md` records `status`, `validation`, `first_pass`, `gate`, and `gate_triggers`.
+- Confirm `$PROJECT_DIR/scratchpad/<task-id>/` was moved out and `meta.yaml` `active_task_id` is updated cleanly.
 - Confirm zero `.tars` files exist inside the repository.

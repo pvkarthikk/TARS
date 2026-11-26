@@ -1,0 +1,45 @@
+{
+  "skill": "tars-accept",
+  "cases": [
+    {
+      "query": "/tars-accept",
+      "should_trigger": true,
+      "reason": "Explicit acceptance and archival of the active task."
+    },
+    {
+      "query": "/tars-accept 2026-11-26_fix-auth",
+      "should_trigger": true,
+      "reason": "Explicit acceptance of a committed paused task by slug."
+    },
+    {
+      "query": "/tars-accept --abandoned 2026-11-15_old-experiment",
+      "should_trigger": true,
+      "reason": "Closing a scratchpad task as abandoned without rewarding learnings."
+    },
+    {
+      "query": "/tars-accept --blocked Waiting on backend schema migration",
+      "should_trigger": true,
+      "reason": "Closing the active scratchpad task as blocked with a close_reason."
+    },
+    {
+      "query": "I committed the changes with git commit -m 'fix auth'",
+      "should_trigger": false,
+      "reason": "Committing files must never auto-accept or auto-reward learnings; only suggest /tars-accept."
+    },
+    {
+      "query": "/tars-task Add unit tests for score math",
+      "should_trigger": false,
+      "reason": "Starting a new task belongs to tars-task (even if it hints /tars-accept for committed paused tasks)."
+    },
+    {
+      "query": "/tars-resume 2026-11-26_fix-auth",
+      "should_trigger": false,
+      "reason": "Switching to a paused task belongs to tars-resume."
+    },
+    {
+      "query": "git status looks clean now",
+      "should_trigger": false,
+      "reason": "Observation about git status does not trigger explicit closure."
+    }
+  ]
+}

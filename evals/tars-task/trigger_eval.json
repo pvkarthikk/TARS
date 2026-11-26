@@ -1,0 +1,55 @@
+{
+  "skill": "tars-task",
+  "cases": [
+    {
+      "query": "/tars-task Add email format validation to the signup form",
+      "should_trigger": true,
+      "reason": "Explicit /tars-task invocation starting a new fast-track coding task."
+    },
+    {
+      "query": "/tars-task Migrate users table to add role column and update auth middleware",
+      "should_trigger": true,
+      "reason": "Explicit /tars-task invocation hitting critical_surfaces gate trigger."
+    },
+    {
+      "query": "go",
+      "should_trigger": true,
+      "reason": "User approval while current task has status: awaiting-go routes back to tars-task Mode B2."
+    },
+    {
+      "query": "Change step 2 in the plan to use JWT cookies instead of headers, don't edit code yet",
+      "should_trigger": true,
+      "reason": "Plan revision while status: awaiting-go routes to tars-task Mode B2 without incrementing rework_count."
+    },
+    {
+      "query": "Answer to question 1: keep backward compatibility with v1 endpoints. go",
+      "should_trigger": true,
+      "reason": "Plan question answers plus approval while status: awaiting-go triggers tars-task Mode B2 execution."
+    },
+    {
+      "query": "Start a new TARS task to fix pagination off-by-one in src/list.py",
+      "should_trigger": true,
+      "reason": "Natural-language request to start a new implementation task under TARS."
+    },
+    {
+      "query": "/tars-rework Use dataclasses instead of plain dicts here",
+      "should_trigger": false,
+      "reason": "Corrective follow-up on an active task belongs to tars-rework, not tars-task."
+    },
+    {
+      "query": "/tars-resume",
+      "should_trigger": false,
+      "reason": "Listing paused scratchpad tasks belongs to tars-resume."
+    },
+    {
+      "query": "/tars-accept",
+      "should_trigger": false,
+      "reason": "Closing and archiving a task belongs to tars-accept."
+    },
+    {
+      "query": "What does the normalize_remote_url function in scripts/tars.py do?",
+      "should_trigger": false,
+      "reason": "Pure codebase Q&A with no task creation or edits."
+    }
+  ]
+}

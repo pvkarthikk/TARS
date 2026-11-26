@@ -1,36 +1,52 @@
 ---
 name: tars-learn
 description: >-
-  Store, deduplicate, decay-score, and index a global or project-local TARS
-  learning rule under ~/.tars/. Use when the user invokes /tars-learn or /learn
-  (in TARS context), or automatically from tars-rework when a reusable rule is
-  discovered.
+  Store, deduplicate, supersede, decay-score, and index a personal global or
+  project-local TARS learning rule under ~/.tars/ using scripts/tars.py. Use
+  when the user invokes /tars-learn or automatically from /tars-rework when a
+  reusable non-secret rule is discovered.
 ---
 
-# TARS Learn (`/tars-learn` / `/learn`)
+# TARS Learn (`/tars-learn`)
 
-Persist reusable rules as atomic Markdown files with exponential time-decay scoring, keeping all memory strictly outside the project repository.
+Persist personal, machine-local rules as atomic Markdown files under `~/.tars/` (`%USERPROFILE%\.tars\` on Windows) using `scripts/tars.py` for ID allocation, decay math, and `_index.md` generation.
+
+---
+
+## Step 0: Secret & Precedence Guard
+
+- **Never store secrets:** Before writing anything to `~/.tars/`, verify the rule contains **no** API keys, tokens, passwords, private keys, connection strings with credentials, or PII. If present, refuse to store the raw secret and ask the user to redact or generalize it into a safe pattern.
+- **Instruction Precedence:** Remind yourself (and note if relevant) that repository instructions (`AGENTS.md`, `.github/copilot-instructions.md`, `CLAUDE.md`) always outrank personal learned rules, and a learned rule can never disable an approval gate.
 
 ---
 
 ## Step 1: Classify Scope
 
-Decide whether the rule is **global** or **project-local**:
-- **Global (`L<NNN>_<slug>.md` in `~/.tars/global/learning/`):** Personal coding style, communication preferences, CLI/tool habits, cross-repo conventions.
-- **Project-local (`P<NNN>_<slug>.md` in `~/.tars/projects/<id>/learning/`):** Repo architecture, domain logic, framework patterns, API/testing conventions.
-- **Default to `project`** whenever uncertain. Ensure the target learning directory and `_index.md` exist.
+Resolve `$TARS_ROOT` and `$PROJECT_DIR` via:
+```bash
+python3 <plugin-root>/scripts/tars.py project-id --repo . --json
+```
+- **Global (`L<NNN>_<slug>.md` in `$TARS_ROOT/global/learning/`):** Personal style, CLI habits, cross-repo preferences.
+- **Project-local (`P<NNN>_<slug>.md` in `$PROJECT_DIR/learning/`):** Repo architecture, domain rules, testing/build conventions.
+- **Default to `project`** when uncertain.
 
 ---
 
-## Step 2: Deduplicate & Write
+## Step 2: Deduplicate, Supersede & Write
 
-1. Scan the target scope's `_index.md` and existing `*.md` learning files (other than `_index.md`).
+1. Read the target `_index.md` and scan existing `*.md` rules in that directory.
 2. Choose one action:
-   - **Refine in place:** If an existing learning covers the same rule, update its body/tags, set `last_used` to today (`YYYY-MM-DD`), and preserve or reset counts cleanly if appropriate.
-   - **Supersede:** If the new rule replaces a conflicting older rule, update the older file to `status: deprecated` (keep the file on disk for audit) and create a new file for the replacement rule.
-   - **Create new:** Scan **all** existing `L*.md` / `P*.md` files (including `deprecated` ones so IDs are never reused), take `max_id + 1` zero-padded to 3 digits (`L001`, `P001`, ...), and write `<ID>_<kebab-slug>.md`.
-
-Use this exact YAML frontmatter schema:
+   - **Refine in place:** Update the existing file's wording/tags and set `last_used` to today (`YYYY-MM-DD`).
+   - **Supersede an older rule `<OLD_ID>`:**
+     1. Allocate the replacement ID:
+        ```bash
+        python3 <plugin-root>/scripts/tars.py next-id --dir "<learning-dir>" --prefix <L|P>
+        ```
+     2. Write the new rule file with `supersedes: <OLD_ID>`, `applied_count: 0`, `accepted_count: 0`, `rework_count: 0`, `score: 0.50`, `status: active`.
+     3. Update the older `<OLD_ID>` file to `status: deprecated` and `superseded_by: <NEW_ID>` (keep the file on disk for audit).
+   - **Create new rule:**
+     1. Allocate the next ID via `scripts/tars.py next-id --dir "<learning-dir>" --prefix <L|P>` (scans all files including `deprecated` so IDs are never reused).
+     2. Write `<ID>_<kebab-slug>.md` using this exact schema:
 
 ```yaml
 ---
@@ -40,49 +56,37 @@ tags: [python, testing]
 status: active           # active | probation | deprecated
 created: 2026-11-26
 last_used: 2026-11-26
-applied_count: 1
-accepted_count: 1
+applied_count: 0
+accepted_count: 0
 rework_count: 0
-score: 0.67
+score: 0.50
+supersedes: null
 ---
 # Concise Rule Title
 One-to-three sentence actionable rule stating what to do and when.
 ```
 
-*(Note: for a brand-new learning with `applied_count: 1`, `accepted_count: 1`, and `delta_t = 0`, `((1 + 1) / (1 + 2)) * exp(0) = 2/3 ≈ 0.67`.)*
+*(New rules start neutral at `applied_count: 0`, `accepted_count: 0`, `score: 0.50`.)*
 
 ---
 
 ## Step 3: Recalculate Decay & Rebuild `_index.md`
 
-For every non-superseded learning file in the target scope:
-1. Compute `delta_t` = integer days elapsed since `last_used` (`today - last_used`).
-2. Calculate:
-   `score = round(((accepted_count + 1) / (applied_count + 2)) * exp(-0.003 * delta_t), 2)`
-3. Update `status` according to thresholds:
-   - `score >= 0.45`: `active`
-   - `0.25 <= score < 0.45`: `probation`
-   - `score < 0.25` (or explicitly superseded): `deprecated`
-4. Rewrite `_index.md` in that learning directory sorted by descending `score`, then ascending `id`, with one line per `active` or `probation` learning:
+Run `scripts/tars.py` to refresh decay scores and regenerate `_index.md` deterministically:
 
-```markdown
-# Project Learnings Index
-<!-- Format: ID | score | tags | one-line summary -->
-P001 | 0.67 | [python, testing] | Concise one-line actionable summary.
+```bash
+python3 <plugin-root>/scripts/tars.py rebuild-index --dir "<learning-dir>" --write --json
 ```
-
-*(Omit `deprecated` learnings from `_index.md`, while keeping their `.md` files on disk for audit.)*
 
 ---
 
 ## Step 4: Report
 
-Confirm the learning `ID`, `scope`, `score`, `status`, and a 1-line summary of what was stored or updated.
+Confirm the learning `ID`, `scope`, `score` (`0.50` for new rules), `status`, `supersedes` (if replacing an older rule), and a 1-line summary.
 
 ---
 
 ## Verification
 
-- Confirm the `<ID>_<slug>.md` file exists in `~/.tars/global/learning/` or `~/.tars/projects/<id>/learning/`.
-- Confirm `_index.md` lists all `active` and `probation` rules with updated scores.
+- Confirm the new/updated `<ID>_<slug>.md` contains zero secrets, starts at `applied_count: 0` / `accepted_count: 0` / `score: 0.50` (if new), and `_index.md` was rebuilt by `scripts/tars.py`.
 - Confirm zero `.tars` files exist inside the repository.

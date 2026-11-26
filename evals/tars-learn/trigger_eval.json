@@ -1,0 +1,45 @@
+{
+  "skill": "tars-learn",
+  "cases": [
+    {
+      "query": "/tars-learn Prefer explicit error return tuples over raising exceptions in service layers",
+      "should_trigger": true,
+      "reason": "Explicit /tars-learn command with a reusable architectural rule."
+    },
+    {
+      "query": "/tars-learn Use project convention: all CLI scripts must support --json output",
+      "should_trigger": true,
+      "reason": "Explicit /tars-learn invocation storing a project-local rule."
+    },
+    {
+      "query": "/tars-learn Replace P001: run ruff before pytest instead of flake8",
+      "should_trigger": true,
+      "reason": "Explicit /tars-learn rule superseding an earlier project rule via supersedes:."
+    },
+    {
+      "query": "Remember this global rule for me under TARS: always use snake_case in Python helpers",
+      "should_trigger": true,
+      "reason": "Natural-language request to persist a TARS personal preference."
+    },
+    {
+      "query": "/learn",
+      "should_trigger": false,
+      "reason": "Bare /learn clashes with built-in slash commands and is intentionally not a TARS trigger."
+    },
+    {
+      "query": "/tars-learn Always connect using API key sk-live-1234567890abcdef and password hunter2",
+      "should_trigger": false,
+      "reason": "Contains raw secrets/credentials; secret guard must refuse storing secrets in ~/.tars/."
+    },
+    {
+      "query": "Teach me how exponential decay works in math",
+      "should_trigger": false,
+      "reason": "General educational question, not storing a TARS rule."
+    },
+    {
+      "query": "/tars-task Add unit tests for tars-learn",
+      "should_trigger": false,
+      "reason": "Starting a coding task belongs to tars-task."
+    }
+  ]
+}

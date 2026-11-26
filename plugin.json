@@ -1,10 +1,11 @@
 {
-  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "tars",
   "displayName": "TARS",
   "version": "0.1.0",
   "description": "TARS (Triage, Act, Rework, Score) — Fast-execution coding agent plugin with objective rework-cost gating, parallel scratchpad tasks, and decaying local-first Markdown memory.",
   "logo": "assets/logo.svg",
+  "agents": "com.github.copilot/agents/",
+  "skills": "skills/",
   "author": {
     "name": "Karthik Venkatesh",
     "url": "https://github.com/pvkarthikk"

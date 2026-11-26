@@ -1,0 +1,45 @@
+{
+  "skill": "tars-resume",
+  "cases": [
+    {
+      "query": "/tars-resume",
+      "should_trigger": true,
+      "reason": "List all paused TARS scratchpad tasks and flag stale ones."
+    },
+    {
+      "query": "/tars-resume fix-auth",
+      "should_trigger": true,
+      "reason": "Resume a specific paused task by slug."
+    },
+    {
+      "query": "Show my paused TARS tasks and check if any are stale",
+      "should_trigger": true,
+      "reason": "Natural-language request to inspect paused TARS scratchpad tasks."
+    },
+    {
+      "query": "Switch back to the paused billing-webhook TARS task",
+      "should_trigger": true,
+      "reason": "Natural-language request to restore a paused TARS task."
+    },
+    {
+      "query": "/resume",
+      "should_trigger": false,
+      "reason": "Bare /resume clashes with built-in Copilot CLI and Claude Code commands and is intentionally not a TARS trigger."
+    },
+    {
+      "query": "Resume the paused Claude Code session from yesterday",
+      "should_trigger": false,
+      "reason": "Host CLI session resume rather than TARS scratchpad task switching."
+    },
+    {
+      "query": "/tars-task Implement webhook retry queue",
+      "should_trigger": false,
+      "reason": "Creating a new task belongs to tars-task."
+    },
+    {
+      "query": "/tars-accept --abandoned old-webhook",
+      "should_trigger": false,
+      "reason": "Closing a stale paused task belongs to tars-accept."
+    }
+  ]
+}

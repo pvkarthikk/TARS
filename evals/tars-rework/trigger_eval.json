@@ -1,0 +1,50 @@
+{
+  "skill": "tars-rework",
+  "cases": [
+    {
+      "query": "/tars-rework Return early on empty input instead of raising ValueError",
+      "should_trigger": true,
+      "reason": "Explicit /tars-rework invocation."
+    },
+    {
+      "query": "No, use pathlib.Path instead of os.path in this same task",
+      "should_trigger": true,
+      "reason": "Corrective follow-up on a status: active task created in the current conversation."
+    },
+    {
+      "query": "Fix the off-by-one in src/validator.py from what we just implemented",
+      "should_trigger": true,
+      "reason": "Corrective follow-up explicitly naming a file in the active task's touched_files."
+    },
+    {
+      "query": "/tars-rework Don't call git clean anywhere, rewrite that helper",
+      "should_trigger": true,
+      "reason": "Explicit rework request that may also trigger blame isolation or /tars-learn."
+    },
+    {
+      "query": "Adjust step 3 of the proposed plan before we start editing (status is awaiting-go)",
+      "should_trigger": false,
+      "reason": "Plan edits before 'go' while status: awaiting-go must route to tars-task Mode B2 and never increment rework_count."
+    },
+    {
+      "query": "go",
+      "should_trigger": false,
+      "reason": "Plan approval belongs to tars-task Mode B2, not rework."
+    },
+    {
+      "query": "Fix the typo in README.md (when active task is from an unrelated session last week and README.md is not in touched_files)",
+      "should_trigger": false,
+      "reason": "Outside scoped auto-detection (neither created/resumed in this conversation nor naming touched_files); must ask or start new task rather than silently treating as rework."
+    },
+    {
+      "query": "/tars-learn Always prefer pytest fixtures over unittest setUp",
+      "should_trigger": false,
+      "reason": "Direct rule storage belongs to tars-learn."
+    },
+    {
+      "query": "/tars-accept",
+      "should_trigger": false,
+      "reason": "Accepting a task belongs to tars-accept."
+    }
+  ]
+}
